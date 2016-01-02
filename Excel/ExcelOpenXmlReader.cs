@@ -1,4 +1,4 @@
-//#define DEBUGREADERS
+#define DEBUGREADERS
 
 using System;
 using System.Collections.Generic;
@@ -31,6 +31,7 @@ namespace Excel
 		private Stream _sheetStream;
 		private object[] _cellsValues;
 		private object[] _savedCellsValues;
+        private Dictionary<string, int> header;
 
 		private bool disposed;
 		private bool _isFirstRowAsColumnNames;
@@ -41,7 +42,7 @@ namespace Excel
 		private string _namespaceUri;
 	    private Encoding defaultEncoding = Encoding.UTF8;
 
-	    #endregion
+		#endregion
 
 		internal ExcelOpenXmlReader()
 		{
@@ -429,7 +430,7 @@ namespace Excel
 	        get { return defaultEncoding; }
 	    }
 
-	    public bool IsValid
+		public bool IsValid
 		{
 			get { return _isValid; }
 		}
@@ -502,6 +503,22 @@ namespace Excel
 				return false;
 			}
 
+            if (_isFirstRowAsColumnNames && header==null)
+            {
+                if (ReadSheetRow(_workbook.Sheets[_resultIndex]))
+                {
+                    int i = _cellsValues.Length;
+                    header=new Dictionary<string,int>(i);
+                    while( i-- > 0 )
+                    {
+                        if (_cellsValues[i] != null)
+                        {
+                            header.Add(_cellsValues[i].ToString(), i);
+                        }
+                    }
+                }
+            }
+
 			return ReadSheetRow(_workbook.Sheets[_resultIndex]);
 		}
 
@@ -536,49 +553,49 @@ namespace Excel
 		{
 			if (IsDBNull(i)) return decimal.MinValue;
 
-			return decimal.Parse(_cellsValues[i].ToString());
+			return (decimal)_cellsValues[i];
 		}
 
 		public double GetDouble(int i)
 		{
 			if (IsDBNull(i)) return double.MinValue;
 
-			return double.Parse(_cellsValues[i].ToString());
+			return (double)_cellsValues[i];
 		}
 
 		public float GetFloat(int i)
 		{
 			if (IsDBNull(i)) return float.MinValue;
 
-			return float.Parse(_cellsValues[i].ToString());
+			return (float)_cellsValues[i];
 		}
 
 		public short GetInt16(int i)
 		{
 			if (IsDBNull(i)) return short.MinValue;
 
-			return short.Parse(_cellsValues[i].ToString());
+			return (short)_cellsValues[i];
 		}
 
 		public int GetInt32(int i)
 		{
 			if (IsDBNull(i)) return int.MinValue;
 
-			return int.Parse(_cellsValues[i].ToString());
+			return (int)_cellsValues[i];
 		}
 
 		public long GetInt64(int i)
 		{
 			if (IsDBNull(i)) return long.MinValue;
 
-			return long.Parse(_cellsValues[i].ToString());
+			return (long)_cellsValues[i];
 		}
 
 		public string GetString(int i)
 		{
 			if (IsDBNull(i)) return null;
 
-			return _cellsValues[i].ToString();
+			return (string)_cellsValues[i];
 		}
 
 		public object GetValue(int i)
@@ -689,7 +706,7 @@ namespace Excel
 
 		public Type GetFieldType(int i)
 		{
-			throw new NotSupportedException();
+            return _cellsValues[i]==null?typeof(object):_cellsValues[i].GetType();
 		}
 
 		public Guid GetGuid(int i)
@@ -699,22 +716,36 @@ namespace Excel
 
 		public string GetName(int i)
 		{
-			throw new NotSupportedException();
+            foreach (var kv in header)
+            {
+                if(kv.Value==i) return kv.Key;
+            }
+            return null;
 		}
 
 		public int GetOrdinal(string name)
 		{
-			throw new NotSupportedException();
+            int ord;
+            if (header.TryGetValue(name, out ord))
+            {
+                return ord;
+            }
+            return -1;
 		}
 
 		public int GetValues(object[] values)
 		{
-			throw new NotSupportedException();
+            int i;
+            for (i = 0; i < values.Length && i < 2; i++)
+            {
+                values[i] = GetValue(i);
+            }
+            return i;
 		}
 
 		public object this[string name]
 		{
-			get { throw new NotSupportedException(); }
+            get { return GetValue(GetOrdinal(name)); }
 		}
 
 		#endregion
