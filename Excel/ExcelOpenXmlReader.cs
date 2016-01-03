@@ -489,6 +489,7 @@ namespace Excel
 			_resultIndex++;
 
 			_isFirstRead = true;
+            header = null;
 		    _savedCellsValues = null;
 
 			return true;
@@ -505,22 +506,27 @@ namespace Excel
 
             if (_isFirstRowAsColumnNames && header==null)
             {
-                if (ReadSheetRow(_workbook.Sheets[_resultIndex]))
-                {
-                    int i = _cellsValues.Length;
-                    header=new Dictionary<string,int>(i);
-                    while( i-- > 0 )
-                    {
-                        if (_cellsValues[i] != null)
-                        {
-                            header.Add(_cellsValues[i].ToString(), i);
-                        }
-                    }
-                }
+                ReadHeader();
             }
 
 			return ReadSheetRow(_workbook.Sheets[_resultIndex]);
 		}
+
+        private void ReadHeader()
+        {
+            if (ReadSheetRow(_workbook.Sheets[_resultIndex]))
+            {
+                int i = _cellsValues.Length;
+                header = new Dictionary<string, int>(i);
+                while (i-- > 0)
+                {
+                    if (_cellsValues[i] != null)
+                    {
+                        header.Add(_cellsValues[i].ToString().ToLower(), i);
+                    }
+                }
+            }
+        }
 
 		public int FieldCount
 		{
@@ -716,6 +722,10 @@ namespace Excel
 
 		public string GetName(int i)
 		{
+            if (_isFirstRowAsColumnNames && header == null)
+            {
+                ReadHeader();
+            }
             foreach (var kv in header)
             {
                 if(kv.Value==i) return kv.Key;
@@ -725,8 +735,16 @@ namespace Excel
 
 		public int GetOrdinal(string name)
 		{
+            if (_isFirstRowAsColumnNames && header == null)
+            {
+                ReadHeader();
+            }
+            if (header == null)
+            {
+                throw new InvalidOperationException();
+            }
             int ord;
-            if (header.TryGetValue(name, out ord))
+            if (header.TryGetValue(name.ToLower(), out ord))
             {
                 return ord;
             }
