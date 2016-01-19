@@ -34,8 +34,9 @@ namespace Excel
         private Dictionary<string, int> header;
 
 		private bool disposed;
-		private bool _isFirstRowAsColumnNames;
-		private const string COLUMN = "Column";
+        private bool _isFirstRowAsColumnNames;
+        private int _SkipFirstRows;
+        private const string COLUMN = "Column";
 		private string instanceId = Guid.NewGuid().ToString();
 
 		private List<int> _defaultDateTimeStyles;
@@ -314,10 +315,42 @@ namespace Excel
 
 			if (_workbook.Sheets[_resultIndex].Dimension == null) return false;
 
-			_isFirstRead = false;
+            _isFirstRead = false;
 
-			_depth = 0;
-			_emptyRowCount = 0;
+            _depth = 0;
+            _emptyRowCount = 0;
+
+            int iCount = _SkipFirstRows;
+            while (iCount-- > 0)
+            {
+                if (!ReadSheetRow(_workbook.Sheets[_resultIndex]))
+                {
+                    return false;
+                }
+            }
+            if (_isFirstRowAsColumnNames)
+            {
+                if (ReadSheetRow(_workbook.Sheets[_resultIndex]))
+                {
+                    int i = _cellsValues.Length;
+                    header = new Dictionary<string, int>(i);
+                    while (i-- > 0)
+                    {
+                        if (_cellsValues[i] != null)
+                        {
+                            header.Add(_cellsValues[i].ToString().ToLower(), i);
+                        }
+                    }
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+               
+            }
 
 			return true;
 		}
@@ -372,15 +405,13 @@ namespace Excel
 				_depth = 0;
 				_emptyRowCount = 0;
 
+                for (int i = 0; i < _workbook.Sheets[ind].ColumnsCount; i++)
+                {
+                    table.Columns.Add(null, typeof(Object));
+                }
+
 				//DataTable columns
-				if (!_isFirstRowAsColumnNames)
-				{
-					for (int i = 0; i < _workbook.Sheets[ind].ColumnsCount; i++)
-					{
-                        table.Columns.Add(null, typeof(Object));
-					}
-				}
-				else if (ReadSheetRow(_workbook.Sheets[ind]))
+				if (ReadSheetRow(_workbook.Sheets[ind]))
 				{
 					for (int index = 0; index < _cellsValues.Length; index++)
 					{
@@ -419,6 +450,18 @@ namespace Excel
 				_isFirstRowAsColumnNames = value;
 			}
 		}
+
+        public int SkipFirstRows
+        {
+            get
+            {
+                return _SkipFirstRows;
+            }
+            set
+            {
+                _SkipFirstRows = value;
+            }
+        }
 
 	    public Encoding Encoding
 	    {
@@ -504,30 +547,10 @@ namespace Excel
 				return false;
 			}
 
-            if (_isFirstRowAsColumnNames && header==null)
-            {
-                ReadHeader();
-            }
-
 			return ReadSheetRow(_workbook.Sheets[_resultIndex]);
 		}
 
-        private void ReadHeader()
-        {
-            if (ReadSheetRow(_workbook.Sheets[_resultIndex]))
-            {
-                int i = _cellsValues.Length;
-                header = new Dictionary<string, int>(i);
-                while (i-- > 0)
-                {
-                    if (_cellsValues[i] != null)
-                    {
-                        header.Add(_cellsValues[i].ToString().ToLower(), i);
-                    }
-                }
-            }
-        }
-
+      
 		public int FieldCount
 		{
 			get { return (_resultIndex >= 0 && _resultIndex < ResultsCount) ? _workbook.Sheets[_resultIndex].ColumnsCount : -1; }
@@ -722,9 +745,9 @@ namespace Excel
 
 		public string GetName(int i)
 		{
-            if (_isFirstRowAsColumnNames && header == null)
+            if (_isFirstRead && !InitializeSheetRead())
             {
-                ReadHeader();
+                throw new InvalidOperationException();
             }
             foreach (var kv in header)
             {
@@ -735,9 +758,9 @@ namespace Excel
 
 		public int GetOrdinal(string name)
 		{
-            if (_isFirstRowAsColumnNames && header == null)
+            if (_isFirstRead && !InitializeSheetRead())
             {
-                ReadHeader();
+                throw new InvalidOperationException();
             }
             if (header == null)
             {

@@ -45,6 +45,7 @@ namespace Excel
 
 		private bool m_IsFirstRead;
 		private bool _isFirstRowAsColumnNames;
+        private int _SkipFirstRows;
 
 		private const string WORKBOOK = "Workbook";
 		private const string BOOK = "Book";
@@ -1231,6 +1232,17 @@ namespace Excel
 			}
 		}
 
+        public int SkipFirstRows
+        {
+            get
+            {
+                return _SkipFirstRows;
+            }
+            set
+            {
+                _SkipFirstRows = value;
+            }
+        }
 	    public Encoding Encoding
 	    {
 	        get { return m_encoding; }
