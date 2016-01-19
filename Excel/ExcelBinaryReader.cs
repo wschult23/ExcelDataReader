@@ -45,6 +45,7 @@ namespace Excel
 
 		private bool m_IsFirstRead;
 		private bool _isFirstRowAsColumnNames;
+        private int _StartAtRow;
 
 		private const string WORKBOOK = "Workbook";
 		private const string BOOK = "Book";
@@ -1231,6 +1232,17 @@ namespace Excel
 			}
 		}
 
+        public int StartAtRow
+        {
+            get
+            {
+                return _StartAtRow;
+            }
+            set
+            {
+                _StartAtRow = value;
+            }
+        }
 	    public Encoding Encoding
 	    {
 	        get { return m_encoding; }

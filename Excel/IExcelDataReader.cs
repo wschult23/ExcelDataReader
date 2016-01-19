@@ -67,6 +67,12 @@ namespace Excel
 		/// </value>
 		bool IsFirstRowAsColumnNames { get;set;}
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the first N rows should be skipped-
+        /// </summary>
+        /// <value>nuber of rows to be skipped</value>
+        int StartAtRow { get; set; }
+
         Encoding Encoding { get; }
         Encoding DefaultEncoding { get; }
 	}
