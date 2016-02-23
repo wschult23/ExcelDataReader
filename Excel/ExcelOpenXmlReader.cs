@@ -336,10 +336,17 @@ namespace Excel
                     header = new Dictionary<string, int>(i);
                     while (i-- > 0)
                     {
-                        if (_cellsValues[i] != null)
+                        var colname=_cellsValues[i]!=null?_cellsValues[i].ToString().ToLower():String.Empty;
+
+                        if (colname==String.Empty)
                         {
-                            header.Add(_cellsValues[i].ToString().ToLower(), i);
+                            colname=string.Format("col{0}",i);
                         }
+                        if(header.ContainsKey(colname))
+                        {
+                            colname=string.Format("{0}_{1}",colname,i);
+                        }
+                        header.Add(colname, i);
                     }
                 }
                 else
